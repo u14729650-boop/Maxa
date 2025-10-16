@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Basketball Scoreboard Control</title>
+<style>
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #191970 60%, #6C3483 120%);
+  color: #FFCA28;
+  text-align: center;
+  padding: 24px;
+}
+.container { max-width: 600px; margin: auto; }
+h1 { color: #FFCA28; }
+.scoreboard {
+  margin-top: 22px;
+  background: rgba(41, 39, 74, 0.85);
+  padding: 24px 0;
+  border-radius: 14px;
+  box-shadow: 0 2px 24px rgba(44, 62, 80, 0.09);
+}
+.team { display: flex; justify-content: space-between; align-items: center; margin: 21px 0; }
+.team input {
+  font-size: 1.1em;
+  padding: 6px;
+  margin-right: 14px;
+  border: 2px solid #FFCA28;
+  border-radius: 6px;
+  background: #28244d;
+  color: #FFCA28;
+}
+.score {
+  font-size: 2.4em;
+  color: #FFCA28;
+  background: #6C3483;
+  border-radius: 6px;
+  padding: 6px 18px;
+}
+.btns button {
+  padding: 12px 22px;
+  font-size: 17px;
+  margin: 5px;
+  background: linear-gradient(90deg, #FFCA28 60%, #E74C3C 120%);
+  color: #191970;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  box-shadow: 0 2px 10px rgba(44, 62, 80, 0.12);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.btns button:hover {
+  background: linear-gradient(90deg, #E74C3C 60%, #FFCA28 120%);
+}
+.timer {
+  margin-top: 33px;
+  font-size: 2.2em;
+  letter-spacing: 1px;
+}
+.timer-buttons button {
+  background: #6C3483;
+  color: #FFCA28;
+  border: none;
+  margin: 8px 5px;
+  padding: 10px 32px;
+  border-radius: 6px;
+  font-size: 17px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.timer-buttons button:hover { background: #FFCA28; color: #191970; }
+.hint { font-size: 0.9em; margin-top: 12px; color: #ddd; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Scoreboard Controller</h1>
+  <p class="hint">(Press Spacebar to Start/Pause Timer)</p>
+  <div class="scoreboard">
+    <div class="team">
+      <input id="teamAName" placeholder="Team A" />
+      <span id="scoreA" class="score">0</span>
+    </div>
+    <div class="btns">
+      <button onclick="updateScore('A',1)">+1</button>
+      <button onclick="updateScore('A',2)">+2</button>
+      <button onclick="updateScore('A',3)">+3</button>
+    </div>
+    <div class="team">
+      <input id="teamBName" placeholder="Team B" />
+      <span id="scoreB" class="score">0</span>
+    </div>
+    <div class="btns">
+      <button onclick="updateScore('B',1)">+1</button>
+      <button onclick="updateScore('B',2)">+2</button>
+      <button onclick="updateScore('B',3)">+3</button>
+    </div>
+  </div>
+  <div class="timer">
+    Game Timer: <span id="timer">10:00</span>
+  </div>
+  <div class="timer-buttons">
+    <button onclick="startTimer()">Start</button>
+    <button onclick="pauseTimer()">Pause</button>
+    <button onclick="resetTimer()">Reset</button>
+  </div>
+</div>
+
+<script>
+let scoreA = 0, scoreB = 0;
+let timer = 600;
+let timerRunning = false, interval;
+const channel = new BroadcastChannel("scoreboard");
+
+function updateScore(team, pts) {
+  if (team === 'A') scoreA += pts; else scoreB += pts;
+  document.getElementById('scoreA').textContent = scoreA;
+  document.getElementById('scoreB').textContent = scoreB;
+  broadcast();
+}
+
+function broadcast() {
+  const data = {
+    teamA: document.getElementById('teamAName').value || "Team A",
+    teamB: document.getElementById('teamBName').value || "Team B",
+    scoreA, scoreB, timer
+  };
+  channel.postMessage(data);
+}
+
+function startTimer() {
+  if (!timerRunning) {
+    timerRunning = true;
+    interval = setInterval(() => {
+      if (timer > 0) timer--; else pauseTimer();
+      broadcast();
+      document.getElementById('timer').textContent = format(timer);
+    }, 1000);
+  }
+}
+
+function pauseTimer() {
+  clearInterval(interval);
+  timerRunning = false;
+  broadcast();
+}
+
+function resetTimer() {
+  timer = 600;
+  document.getElementById('timer').textContent = "10:00";
+  broadcast();
+}
+
+function format(s) {
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${m}:${sec < 10 ? '0' + sec : sec}`;
+}
+
+// Spacebar starts/pauses the timer
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault(); // Avoid page scroll
+    if (timerRunning) pauseTimer();
+    else startTimer();
+  }
+});
+
+broadcast();
+</script>
+</body>
+</html>
